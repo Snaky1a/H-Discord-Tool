@@ -1,3 +1,11 @@
+"""
+H-Discord-Tool
+
+helpers/menu module (main menu)
+
+2023-2023
+"""
+
 from h_tool.core.get_info import check_token
 from ..helpers.logs import console
 from ..helpers.utils import build_markdown, build_panel

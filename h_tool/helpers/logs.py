@@ -1,3 +1,11 @@
+"""
+H-Discord-Tool
+
+helpers/logs module (Console and logging)
+
+2023-2023
+"""
+
 from datetime import datetime
 from typing import Union, IO, Literal
 
@@ -10,6 +18,11 @@ from rich.prompt import Prompt
 class SimpleConsole:
 
     def __init__(self, file: Union[IO, str] = None) -> None:
+        """
+        initializing custom console
+        :param file: file to log (default: None)
+        """
+
         self.log_file = Console(
             file=file
             if isinstance(file, IO)

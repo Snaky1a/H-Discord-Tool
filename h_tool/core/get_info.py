@@ -61,7 +61,7 @@ def get_user_flags(public_flags: int) -> List[str]:
     :param public_flags: user flags
     :return: list of flags (:class:`str` object)
     """
-    flags_all: List[str] = list()
+    flags_all: List[str] = []
     for key, value in flags.items():
         if (key and public_flags) == key:
             flags_all.append(value)
@@ -250,8 +250,7 @@ async def get_me(headers: Dict[Any, Any]) -> Tuple[int, Any]:
         ) as response:
             if response.status == 200:
                 return response.status, await response.json()
-            else:
-                return response.status, ""
+            return response.status, ""
 
 
 async def get_connections(headers: Dict[Any, Any]) -> Dict[Any, Any]:
@@ -445,12 +444,13 @@ async def get_dms(headers: Dict[Any, Any]) -> List[str]:
                 dms_json = await resp.json()
 
     if dms_json:
-        for i, dm in enumerate(dms_json):
-            text = f"\nPrivate channel №{i + 1}\nID: {dm['id']}\n" \
-                   f"Friend type: {friend_type.get(dm.get('type', 0), 'Unknown')}" \
-                   f"\nLast message id: {dm.get('last_message_id', None)}\n" \
-                   f"Channel created at: {get_account_creation(dm['id'])}\n\nRecipients:\n"
-            for recipient in dm['recipients']:
+        for i, direct_message in enumerate(dms_json):
+            text = f"\nPrivate channel №{i + 1}\nID: {direct_message['id']}\n" \
+                   f"Friend type: {friend_type.get(direct_message.get('type', 0), 'Unknown')}" \
+                   f"\nLast message id: {direct_message.get('last_message_id', None)}\n" \
+                   f"Channel created at: {get_account_creation(direct_message['id'])}" \
+                   f"\n\nRecipients:\n"
+            for recipient in direct_message['recipients']:
                 user_flags = get_user_flags(recipient.get("public_flags", 0))
                 user_id = recipient["id"]
                 user_name = recipient["username"]
@@ -474,7 +474,10 @@ async def get_dms(headers: Dict[Any, Any]) -> List[str]:
     return direct_messages
 
 
-async def check_token(token: str, mask_token: bool = True) -> None:
+async def check_token(
+        token: str,
+        mask_token: bool = True
+) -> None:
     """
     The main function to check token
     :param token: Discord Token (:class:`str` object)
@@ -565,7 +568,7 @@ async def check_token(token: str, mask_token: bool = True) -> None:
 
         count, relationships = await get_relationships(headers=headers)
         rel_text += f"Total relationships: {count}"
-        rel_text += ''.join([text for text in relationships])
+        rel_text += ''.join(list(relationships))
 
         guilds = await get_guilds(headers=headers)
         guilds_text += ''.join(
@@ -602,7 +605,7 @@ async def check_token(token: str, mask_token: bool = True) -> None:
 
         direct_messages = await get_dms(headers=headers)
         private_channels_text += f"Total private channels: {len(direct_messages)}\n"
-        private_channels_text += ''.join([text for text in direct_messages])
+        private_channels_text += ''.join(list(direct_messages))
 
         username = info.get("username")
         full_name = f"{info.get('username')}#{info.get('discriminator')}"
@@ -677,8 +680,10 @@ Nitro ends: {nitro_end}
 {private_channels_text}
 ======="""
 
-        async with aiofiles.open("h_tool/saved/token_info.txt", "w", encoding="utf-8") as f:
-            await f.write(full_text)
+        async with aiofiles.open(
+                "h_tool/saved/token_info.txt", "w", encoding="utf-8"
+        ) as token_file:
+            await token_file.write(full_text)
 
         minimal_text = f"""
 === Account Information ===
