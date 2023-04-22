@@ -50,7 +50,10 @@ def get_user_flags(public_flags: int) -> List[str]:
     return flags_all
 
 
-def from_iso_format_to_humanly(iso: str, to_string: Union[datetime.strptime, str] = "%d.%m.%Y %H:%M:%S") -> str:
+def from_iso_format_to_humanly(
+        iso: str,
+        to_string: Union[datetime.strptime, str] = "%d.%m.%Y %H:%M:%S"
+) -> str:
     date = datetime.fromisoformat(iso)
     return date.strftime(to_string)
 
@@ -65,9 +68,15 @@ def get_account_creation(snowflake_id: str, to_humanly: bool = True) -> Union[da
 
 async def check_nitro_credit(headers: Dict[Any, Any]) -> Tuple[int, int]:
     dict_credits = {"classic_credits": 0, "boost_credits": 0}
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.get("/api/v10/users/@me/applications/521842831262875670/entitlements?exclude_consumed=true",
-                               headers=headers) as response:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
+        async with session.get(
+                "/api/v10/users/@me/applications/521842831262875"
+                "670/entitlements?exclude_consumed=true",
+                headers=headers
+        ) as response:
             if response.status == 200:
                 text = await response.text()
                 dict_credits["classic_credits"] = text.count("Nitro Classic")
@@ -80,8 +89,14 @@ async def check_payments(headers: Dict[Any, Any]) -> Optional[Union[List[str], i
     search_billing = None
     cc_digits = {"american express": "3", "visa": "4", "mastercard": "5"}
     account_cards, card = [], ""
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.get("/api/v10/users/@me/billing/payment-sources", headers=headers) as response:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
+        async with session.get(
+                "/api/v10/users/@me/billing/payment-sources",
+                headers=headers
+        ) as response:
             if response.status == 200:
                 search_billing = await response.json()
             elif (await response.json()).get("code") == 40002:
@@ -133,8 +148,14 @@ async def check_payments(headers: Dict[Any, Any]) -> Optional[Union[List[str], i
 async def get_guilds(headers: Dict[Any, Any]) -> Dict[str, List[str]]:
     guilds: Dict[str, List[str]] = {}
 
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.get("/api/v9/users/@me/guilds?with_counts=true", headers=headers) as response:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
+        async with session.get(
+                "/api/v9/users/@me/guilds?with_counts=true",
+                headers=headers
+        ) as response:
             if response.status == 200:
                 r_json = await response.json()
 
@@ -146,8 +167,14 @@ async def get_guilds(headers: Dict[Any, Any]) -> Dict[str, List[str]]:
 async def get_gifts(headers: Dict[Any, Any]) -> List[str]:
     gifts = []
 
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.get("/api/v10/users/@me/entitlements/gifts", headers=headers) as response:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
+        async with session.get(
+                "/api/v10/users/@me/entitlements/gifts",
+                headers=headers
+        ) as response:
             if response.status == 200:
                 r_json = await response.json()
 
@@ -157,8 +184,14 @@ async def get_gifts(headers: Dict[Any, Any]) -> List[str]:
 
 
 async def get_me(headers: Dict[Any, Any]) -> Tuple[int, Any]:
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.get("/api/v10/users/@me", headers=headers) as response:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
+        async with session.get(
+                "/api/v10/users/@me",
+                headers=headers
+        ) as response:
             if response.status == 200:
                 return response.status, await response.json()
             else:
@@ -167,8 +200,14 @@ async def get_me(headers: Dict[Any, Any]) -> Tuple[int, Any]:
 
 async def get_connections(headers: Dict[Any, Any]) -> Dict[Any, Any]:
     connections = {}
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.get("/api/v10/users/@me/connections", headers=headers) as response:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
+        async with session.get(
+                "/api/v10/users/@me/connections",
+                headers=headers
+        ) as response:
             if response.status == 200:
                 info = await response.json()
 
@@ -185,7 +224,10 @@ async def get_promotions(headers: Dict[Any, Any], locale: Optional[str] = None) 
     promo_ = {}
     res = None
 
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
         async with session.get(
                 f"/api/v10/users/@me/outbound-promotions/codes?locale={locale if locale else 'us'}",
                 headers=headers
@@ -211,8 +253,14 @@ async def check_boosts(headers: Dict[Any, Any]) -> Dict[Any, Any]:
     boosts = {}
     info = None
 
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.get("/api/v10/users/@me/guilds/premium/subscription-slots", headers=headers) as response:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
+        async with session.get(
+                "/api/v10/users/@me/guilds/premium/subscription-slots",
+                headers=headers
+        ) as response:
             if response.status == 200:
                 info = await response.json()
 
@@ -232,7 +280,10 @@ async def check_boosts(headers: Dict[Any, Any]) -> Dict[Any, Any]:
                 if boost_info["cooldown_ends_at"] is None \
                 else from_iso_format_to_humanly(boost_info["cooldown_ends_at"])
 
-            boosts[boost_id] = [guild_id, ended, boost_status, canceled, cooldown_ends_at, subscription_id]
+            boosts[boost_id] = [
+                guild_id, ended, boost_status,
+                canceled, cooldown_ends_at, subscription_id
+            ]
 
     return boosts
 
@@ -240,7 +291,10 @@ async def check_boosts(headers: Dict[Any, Any]) -> Dict[Any, Any]:
 async def get_nitro_info(headers: Dict[Any, Any]) -> tuple[Union[str, None], Union[str, None]]:
     nitro_start, nitro_end = None, None
 
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
         async with session.get("/api/v10/users/@me/billing/subscriptions", headers=headers) as resp:
             if resp.status == 200:
                 nitro_billing = await resp.json()
@@ -255,17 +309,27 @@ async def get_nitro_info(headers: Dict[Any, Any]) -> tuple[Union[str, None], Uni
 async def get_relationships(headers: Dict[Any, Any]) -> tuple[int, List[str]]:
     relationship_json, relationship_list = {}, []
 
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
         async with session.get("/api/v10/users/@me/relationships", headers=headers) as resp:
             relationship_json = await resp.json()
 
-    if relationship_json and not isinstance(relationship_json, list) and relationship_json.get("code") != 40002:
+    if (relationship_json and
+            not isinstance(relationship_json, list)
+            and relationship_json.get("code") != 40002):
         for friend in relationship_json:
             user_flags = get_user_flags(friend['user']['public_flags'])
             user_id = friend["user"].get("id", 0)
             user_name = friend["user"].get("username")
+            file_format = (
+                'gif'
+                if str(friend['user'].get('avatar', '')).startswith('a_')
+                else 'png'
+            )
             avatar = f"https://cdn.discordapp.com/avatars/{user_id}/{friend['user']['avatar']}." \
-                     f"{'gif' if str(friend['user'].get('avatar', '')).startswith('a_') else 'png'}" \
+                     f"{file_format}" \
                 if friend['user'].get("avatar") else None
             relationship_list.append(f"""\n
 ID: {user_id}
@@ -282,7 +346,10 @@ Flags: {', '.join(user_flags) if user_flags else 'No flags'}""")
 async def get_dms(headers: Dict[Any, Any]) -> List[str]:
     dms_json, direct_messages = {}, []
 
-    async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(
+            base_url=BASE_URL,
+            timeout=aiohttp.ClientTimeout(total=10)
+    ) as session:
         async with session.get("/api/v10/users/@me/channels", headers=headers) as resp:
             if resp.status == 200:
                 dms_json = await resp.json()
@@ -327,13 +394,17 @@ async def check_token(token: str, mask_token: bool = True) -> None:
         "Content-Type": "application/json",
         "Cookie": "__dcfduid=8ae3ca90b4d911ec998447df76ccab6d; "
                   "__sdcfduid"
-                  "=8ae3ca91b4d911ec998447df76ccab6d07a29d8ce7d96383bcbf0ff12d2f61052dd1691af72d9101442df895f59aa340; "
-                  "OptanonConsent=isIABGlobal=false&datestamp=Tue+Sep+20+2022+15%3A55%3A24+GMT%2B0200+("
-                  "hora+de+verano+de+Europa+central)&version=6.33.0&hosts=&landingPath=NotLandingPage&groups=C0001"
+                  "=8ae3ca91b4d911ec998447df76ccab6d07a29d8ce7d96383bcbf0ff"
+                  "12d2f61052dd1691af72d9101442df895f59aa340; "
+                  "OptanonConsent=isIABGlobal=false&datestamp=Tue+Sep+20+2"
+                  "022+15%3A55%3A24+GMT%2B0200+("
+                  "hora+de+verano+de+Europa+central)&version=6.33.0&hosts="
+                  "&landingPath=NotLandingPage&groups=C0001"
                   "%3A1%2CC0002%3A1%2CC0003%3A1&AwaitingReconsent=false&geolocation=ES%3BMD; "
                   "__stripe_mid=1798dff8-2674-4521-a787-81918eb7db2006dc53; "
                   "OptanonAlertBoxClosed=2022-04-15T16:00:46.081Z; _ga=GA1.2.313716522.1650038446; "
-                  "_gcl_au=1.1.1755047829.1662931666; _gid=GA1.2.778764533.1663618168; locale=es-ES; "
+                  "_gcl_au=1.1.1755047829.1662931666; _gid=GA1.2.778764533"
+                  ".1663618168; locale=es-ES; "
                   "__cfruid=fa5768ee3134221f82348c02f7ffe0ae3544848a-1663682124",
         "Host": "discord.com",
         "Origin": "https://discord.com",
@@ -342,10 +413,12 @@ async def check_token(token: str, mask_token: bool = True) -> None:
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
         "TE": "trailers",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0)"
+                      " Gecko/20100101 Firefox/105.0",
     }
     if mask_token:
-        masked_token = token.split(".")[-1].replace(token.split(".")[-1], "*" * len(token.split(".")[-1]))
+        temp = token.split(".")[-1]
+        masked_token = temp.replace(temp, "*" * len(temp))
         masked_token = f"{'.'.join(token.split('.')[:-1])}.{masked_token}"
     else:
         masked_token = token
@@ -401,7 +474,10 @@ async def check_token(token: str, mask_token: bool = True) -> None:
 
         guilds = await get_guilds(headers=headers)
         guilds_text += ''.join(
-            [f"ID: {_id} | Name: {name} | Owner: {owner}\n" for _id, (name, owner) in guilds.items()]
+            [
+                f"ID: {_id} | Name: {name} | Owner: {owner}\n"
+                for _id, (name, owner) in guilds.items()
+            ]
         ) if len(guilds) >= 1 else "No guilds in account"
 
         connections = await get_connections(headers=headers)
@@ -422,8 +498,11 @@ async def check_token(token: str, mask_token: bool = True) -> None:
         boosts_text += ''.join([
             f"Boost status: {boost_status} | Guild id: {guild_id} | Boost id: {boost_id} "
             f"| ended: {ended} | canceled: {canceled} | Cooldown ends: {cooldown_end}\n"
-            for boost_id, (guild_id, ended, boost_status, canceled, cooldown_end, subscription_id) in
-            boosts.items()
+            for boost_id, (
+                guild_id,
+                ended, boost_status, canceled,
+                cooldown_end, subscription_id
+            ) in boosts.items()
         ]) if len(boosts) >= 1 else "No boosts in account"
 
         direct_messages = await get_dms(headers=headers)
@@ -432,10 +511,20 @@ async def check_token(token: str, mask_token: bool = True) -> None:
 
         username = info.get("username")
         full_name = f"{info.get('username')}#{info.get('discriminator')}"
+        avatar_format = (
+            'gif'
+            if str(info.get('avatar', '')).startswith('a_')
+            else 'png'
+        )
+        banner_format = (
+            'gif'
+            if str(info.get('banner', '')).startswith('a_')
+            else 'png'
+        )
         avatar = f"https://cdn.discordapp.com/avatars/{info.get('id')}/{info.get('avatar')}." \
-                 f"{'gif' if str(info.get('avatar', '')).startswith('a_') else 'png'}" if info.get("avatar") else None
+                 f"{avatar_format}" if info.get("avatar") else None
         banner = f"https://cdn.discordapp.com/banners/{info.get('id')}/{info.get('banner')}." \
-                 f"{'gif' if str(info.get('banner', '')).startswith('a_') else 'png'}" if info.get("banner") else None
+                 f"{banner_format}" if info.get("banner") else None
         email = info.get("email")
         phone = info.get("phone")
         verified = info.get("verified", False)

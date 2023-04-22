@@ -13,8 +13,12 @@ class SimpleConsole:
         self.log_file = Console(
             file=file
             if isinstance(file, IO)
-            else open(file, "a+")
-            if file else open(f"../h_tool-{datetime.now().strftime('%Y-%m-%d %H.%M.%S')}.log", "a+")
+            else open(file, "a+", encoding="utf-8")
+            if file else open(
+                f"../h_tool-{datetime.now().strftime('%Y-%m-%d %H.%M.%S')}.log",
+                "a+",
+                encoding="utf-8"
+            )
         )
         self.console = Console()
         self.prompt = Prompt()
