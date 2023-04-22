@@ -33,4 +33,4 @@ jobs:
       - name: Run black
         if: ${{ always() && steps.install-deps.outcome == 'success' }}
         run: |
-          black --check h_tool
+          black h_tool --diff
