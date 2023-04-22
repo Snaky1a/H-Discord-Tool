@@ -26,20 +26,21 @@ options = [
 
 async def main_menu() -> None:
     console.print(markdown=build_markdown("Welcome to H-Discord-Tool!", justify="left"))
-    option = int(console.choice(
-        "Option", choices=[str(index + 1) for index, _ in enumerate(options)],
-        panel=build_panel(
-            title="Please, select an option",
-            text='\n'.join(options), expand=False
-        ), default=10
-    ))
+    option = int(
+        console.choice(
+            "Option",
+            choices=[str(index + 1) for index, _ in enumerate(options)],
+            panel=build_panel(
+                title="Please, select an option", text="\n".join(options), expand=False
+            ),
+            default=10,
+        )
+    )
 
     if option == 1:
         token = console.input("Token: ", password=True)
         mask_token = console.choice(
-            "Mask Token in result? ",
-            choices=["y", "n"], show_choices=True,
-            default="n"
+            "Mask Token in result? ", choices=["y", "n"], show_choices=True, default="n"
         )
         await check_token(token=token, mask_token=True if mask_token == "y" else False)
 
