@@ -1,3 +1,8 @@
+"""
+H-Discord-Tool
+
+2023-2023
+"""
 import asyncio
 import os
 

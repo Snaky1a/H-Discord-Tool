@@ -1,3 +1,11 @@
+"""
+H-Discord-Tool
+
+core/get_info module (check_token)
+
+2023-2023
+"""
+
 from datetime import datetime
 from typing import Union, Dict, Any, List, Tuple, Optional
 
@@ -38,10 +46,21 @@ def from_datetime_to_humanly(
         date: datetime,
         to_string: Union[datetime.strptime, str] = "%d.%m.%Y %H:%M:%S"
 ) -> str:
+    """
+    Convert datetime to human format
+    :param date: :class:`datetime` object to convert
+    :param to_string: date-string in :class:`datetime.strptime` format
+    :return: converted date in :class:`str` format
+    """
     return date.strftime(to_string)
 
 
 def get_user_flags(public_flags: int) -> List[str]:
+    """
+    Get public user flags
+    :param public_flags: user flags
+    :return: list of flags (:class:`str` object)
+    """
     flags_all: List[str] = list()
     for key, value in flags.items():
         if (key and public_flags) == key:
@@ -54,11 +73,23 @@ def from_iso_format_to_humanly(
         iso: str,
         to_string: Union[datetime.strptime, str] = "%d.%m.%Y %H:%M:%S"
 ) -> str:
+    """
+    Convert ISO format to human format
+    :param iso: ISO date
+    :param to_string: date-string in :class:`datetime.strptime` format
+    :return: converted date in :class:`str` format
+    """
     date = datetime.fromisoformat(iso)
     return date.strftime(to_string)
 
 
 def get_account_creation(snowflake_id: str, to_humanly: bool = True) -> Union[datetime, str]:
+    """
+    Get account creation by discord ID (Snowflake)
+    :param snowflake_id: the discord ID
+    :param to_humanly: convert date to human format
+    :return: converted date in :class:`str` format
+    """
     user_creation = (int(snowflake_id) >> 22) + 1420070400000
     user_creation = datetime.fromtimestamp(user_creation / 1000.0)
     if to_humanly:
@@ -67,6 +98,11 @@ def get_account_creation(snowflake_id: str, to_humanly: bool = True) -> Union[da
 
 
 async def check_nitro_credit(headers: Dict[Any, Any]) -> Tuple[int, int]:
+    """
+    Check Nitro credits of user-account (from billing)
+    :param headers: Headers for request
+    :return: tuple of classic and boost credits
+    """
     dict_credits = {"classic_credits": 0, "boost_credits": 0}
     async with aiohttp.ClientSession(
             base_url=BASE_URL,
@@ -86,6 +122,11 @@ async def check_nitro_credit(headers: Dict[Any, Any]) -> Tuple[int, int]:
 
 
 async def check_payments(headers: Dict[Any, Any]) -> Optional[Union[List[str], int]]:
+    """
+    Check payments in user-account
+    :param headers: Headers for request
+    :return: list of payments
+    """
     search_billing = None
     cc_digits = {"american express": "3", "visa": "4", "mastercard": "5"}
     account_cards, card = [], ""
@@ -146,6 +187,11 @@ async def check_payments(headers: Dict[Any, Any]) -> Optional[Union[List[str], i
 
 
 async def get_guilds(headers: Dict[Any, Any]) -> Dict[str, List[str]]:
+    """
+    Get guilds in account
+    :param headers: Headers for request
+    :return: Dict of guilds
+    """
     guilds: Dict[str, List[str]] = {}
 
     async with aiohttp.ClientSession(
@@ -165,6 +211,11 @@ async def get_guilds(headers: Dict[Any, Any]) -> Dict[str, List[str]]:
 
 
 async def get_gifts(headers: Dict[Any, Any]) -> List[str]:
+    """
+    Get gifts in account (from entitlements)
+    :param headers: Headers for request
+    :return: List of gifts subscriptions (only plan_name)
+    """
     gifts = []
 
     async with aiohttp.ClientSession(
@@ -184,6 +235,11 @@ async def get_gifts(headers: Dict[Any, Any]) -> List[str]:
 
 
 async def get_me(headers: Dict[Any, Any]) -> Tuple[int, Any]:
+    """
+    Get info about account
+    :param headers: Headers for request
+    :return: Status code and information about account
+    """
     async with aiohttp.ClientSession(
             base_url=BASE_URL,
             timeout=aiohttp.ClientTimeout(total=10)
@@ -199,6 +255,11 @@ async def get_me(headers: Dict[Any, Any]) -> Tuple[int, Any]:
 
 
 async def get_connections(headers: Dict[Any, Any]) -> Dict[Any, Any]:
+    """
+    Get account connections
+    :param headers: Headers for request
+    :return: Dict of connections
+    """
     connections = {}
     async with aiohttp.ClientSession(
             base_url=BASE_URL,
@@ -220,7 +281,16 @@ async def get_connections(headers: Dict[Any, Any]) -> Dict[Any, Any]:
     return connections
 
 
-async def get_promotions(headers: Dict[Any, Any], locale: Optional[str] = None) -> Dict[Any, Any]:
+async def get_promotions(
+        headers: Dict[Any, Any],
+        locale: Optional[str] = None
+) -> Dict[Any, Any]:
+    """
+    Get account promotions (outbound)
+    :param headers: Headers for request
+    :param locale: Account locale
+    :return: Dict of promotions
+    """
     promo_ = {}
     res = None
 
@@ -250,6 +320,11 @@ async def get_promotions(headers: Dict[Any, Any], locale: Optional[str] = None) 
 
 
 async def check_boosts(headers: Dict[Any, Any]) -> Dict[Any, Any]:
+    """
+    Check boosts in account
+    :param headers: Headers for request
+    :return: Dict of boosts
+    """
     boosts = {}
     info = None
 
@@ -288,7 +363,12 @@ async def check_boosts(headers: Dict[Any, Any]) -> Dict[Any, Any]:
     return boosts
 
 
-async def get_nitro_info(headers: Dict[Any, Any]) -> tuple[Union[str, None], Union[str, None]]:
+async def get_nitro_info(headers: Dict[Any, Any]) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Get info about discord nitro (check if nitro is active and get start, end date)
+    :param headers: Headers for request
+    :return: :class:`Tuple[int, int]` (start date and end date)
+    """
     nitro_start, nitro_end = None, None
 
     async with aiohttp.ClientSession(
@@ -306,7 +386,12 @@ async def get_nitro_info(headers: Dict[Any, Any]) -> tuple[Union[str, None], Uni
     return nitro_start, nitro_end
 
 
-async def get_relationships(headers: Dict[Any, Any]) -> tuple[int, List[str]]:
+async def get_relationships(headers: Dict[Any, Any]) -> Tuple[int, List[str]]:
+    """
+    Get account relationships (friends)
+    :param headers: Headers for request
+    :return: length of relationships and list of friends
+    """
     relationship_json, relationship_list = {}, []
 
     async with aiohttp.ClientSession(
@@ -344,6 +429,11 @@ Flags: {', '.join(user_flags) if user_flags else 'No flags'}""")
 
 
 async def get_dms(headers: Dict[Any, Any]) -> List[str]:
+    """
+    Get direct messages in account
+    :param headers: Headers for request
+    :return: list of direct messages
+    """
     dms_json, direct_messages = {}, []
 
     async with aiohttp.ClientSession(
@@ -385,6 +475,11 @@ async def get_dms(headers: Dict[Any, Any]) -> List[str]:
 
 
 async def check_token(token: str, mask_token: bool = True) -> None:
+    """
+    The main function to check token
+    :param token: Discord Token (:class:`str` object)
+    :param mask_token: Mask token in result (:class:`bool` object)
+    """
     headers = {
         "Accept": "*/*",
         "Accept-Language": "es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3",
