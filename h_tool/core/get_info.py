@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union, Dict, Any, List, Tuple, Optional, Coroutine
+from typing import Union, Dict, Any, List, Tuple, Optional
 
 import aiofiles
 import aiohttp
@@ -7,8 +7,8 @@ import aiohttp
 from h_tool.helpers.logs import console
 from ..helpers import menu
 
-BASE_URL = "https://discord.com/"
-friend_type = {
+BASE_URL: str = "https://discord.com/"
+friend_type: Dict[int, str] = {
     1: "Friend",
     2: "Block",
     3: "incoming friend request",
@@ -42,7 +42,7 @@ def from_datetime_to_humanly(
 
 
 def get_user_flags(public_flags: int) -> List[str]:
-    flags_all: list[str] = list()
+    flags_all: List[str] = list()
     for key, value in flags.items():
         if (key and public_flags) == key:
             flags_all.append(value)
@@ -63,7 +63,7 @@ def get_account_creation(snowflake_id: str, to_humanly: bool = True) -> Union[da
     return user_creation
 
 
-async def check_nitro_credit(headers: Dict[Any, Any]) -> tuple[int, int]:
+async def check_nitro_credit(headers: Dict[Any, Any]) -> Tuple[int, int]:
     dict_credits = {"classic_credits": 0, "boost_credits": 0}
     async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get("/api/v10/users/@me/applications/521842831262875670/entitlements?exclude_consumed=true",
@@ -130,8 +130,8 @@ async def check_payments(headers: Dict[Any, Any]) -> Optional[Union[List[str], i
     return account_cards
 
 
-async def get_guilds(headers: Dict[Any, Any]) -> dict[str, list[str]]:
-    guilds: dict[str, list[str]] = {}
+async def get_guilds(headers: Dict[Any, Any]) -> Dict[str, List[str]]:
+    guilds: Dict[str, List[str]] = {}
 
     async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get("/api/v9/users/@me/guilds?with_counts=true", headers=headers) as response:
@@ -156,18 +156,13 @@ async def get_gifts(headers: Dict[Any, Any]) -> List[str]:
     return gifts
 
 
-async def get_me(headers: Dict[Any, Any]) -> Union[Coroutine[Any, Any, None], Dict[Any, Any], None, Tuple[int, str]]:
-    info = None
+async def get_me(headers: Dict[Any, Any]) -> Tuple[int, Any]:
     async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get("/api/v10/users/@me", headers=headers) as response:
             if response.status == 200:
-                info = await response.json()
-            elif response.status == 401:
+                return response.status, await response.json()
+            else:
                 return response.status, ""
-            elif response.status == 403:
-                return response.status, ""
-
-    return response.status, info
 
 
 async def get_connections(headers: Dict[Any, Any]) -> Dict[Any, Any]:
@@ -178,13 +173,10 @@ async def get_connections(headers: Dict[Any, Any]) -> Dict[Any, Any]:
                 info = await response.json()
 
     for connection in info:
-        connection_type = connection["type"]
-        name = connection["name"]
-        shows_in_profile = connection["visibility"] == 1
-        verified = connection["verified"]
-        revoked = connection["revoked"]
-
-        connections[connection_type] = [name, shows_in_profile, verified, revoked]
+        connections[connection["type"]] = [
+            connection["name"], connection["visibility"] == 1,
+            connection["verified"], connection["revoked"]
+        ]
 
     return connections
 
@@ -203,13 +195,14 @@ async def get_promotions(headers: Dict[Any, Any], locale: Optional[str] = None) 
 
     if res:
         for result in res:
-            name = result["promotion"]["outbound_title"]
             start_time = from_iso_format_to_humanly(result["promotion"]["start_date"])
             end_time = from_iso_format_to_humanly(result["promotion"]["end_date"])
-            link_to = result["promotion"]["outbound_redemption_page_link"]
-            code = result["code"]
 
-            promo_[name] = [start_time, end_time, link_to, code]
+            promo_[result["promotion"]["outbound_title"]] = [
+                start_time, end_time,
+                result["promotion"]["outbound_redemption_page_link"],
+                result["code"]
+            ]
 
     return promo_
 
@@ -260,7 +253,7 @@ async def get_nitro_info(headers: Dict[Any, Any]) -> tuple[Union[str, None], Uni
 
 
 async def get_relationships(headers: Dict[Any, Any]) -> tuple[int, List[str]]:
-    relationship_list = []
+    relationship_json, relationship_list = {}, []
 
     async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get("/api/v10/users/@me/relationships", headers=headers) as resp:
@@ -269,25 +262,25 @@ async def get_relationships(headers: Dict[Any, Any]) -> tuple[int, List[str]]:
     if relationship_json and not isinstance(relationship_json, list) and relationship_json.get("code") != 40002:
         for friend in relationship_json:
             user_flags = get_user_flags(friend['user']['public_flags'])
-            user_id = friend['user']['id']
-            user_name = friend['user']['username']
+            user_id = friend["user"].get("id", 0)
+            user_name = friend["user"].get("username")
             avatar = f"https://cdn.discordapp.com/avatars/{user_id}/{friend['user']['avatar']}." \
-                     f"{'gif' if str(friend['user']['avatar']).startswith('a_') else 'png'}" \
-                if friend['user']["avatar"] else None
+                     f"{'gif' if str(friend['user'].get('avatar', '')).startswith('a_') else 'png'}" \
+                if friend['user'].get("avatar") else None
             relationship_list.append(f"""\n
-[ ID ]: {user_id}
-[ Avatar URL ]: {avatar}
-[ Account Creation ]: {get_account_creation(user_id)}
-[ Nickname ]: {friend['nickname'] if friend['nickname'] is not None else user_name}
-[ Name#tag ]: {f'{user_name}#{friend["user"]["discriminator"]}'}
-[ Friend type ]: {friend_type.get(friend['type'], 'Unknown')}
-[ Flags ]: {', '.join(user_flags) if user_flags else 'No flags'}""")
+ID: {user_id}
+Avatar URL: {avatar}
+Account Creation: {get_account_creation(user_id)}
+Nickname: {friend['nickname'] if friend['nickname'] is not None else user_name}
+Name#tag: {f'{user_name}#{friend["user"]["discriminator"]}'}
+Friend type: {friend_type.get(friend['type'], 'Unknown')}
+Flags: {', '.join(user_flags) if user_flags else 'No flags'}""")
 
     return len(relationship_list), relationship_list
 
 
 async def get_dms(headers: Dict[Any, Any]) -> List[str]:
-    direct_messages = []
+    dms_json, direct_messages = {}, []
 
     async with aiohttp.ClientSession(base_url=BASE_URL, timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.get("/api/v10/users/@me/channels", headers=headers) as resp:
@@ -296,29 +289,29 @@ async def get_dms(headers: Dict[Any, Any]) -> List[str]:
 
     if dms_json:
         for i, dm in enumerate(dms_json):
-            text = f"\nPrivate channel №{i + 1}\n[ ID ]: {dm['id']}\n" \
-                   f"[ Friend type ]: {friend_type.get(dm['type'], 'Unknown')}" \
-                   f"\n[ Last message id ]: {dm.get('last_message_id', None)}\n" \
-                   f"[ Channel created at ]: {get_account_creation(dm['id'])}\n\n[ Recipients ]:\n"
+            text = f"\nPrivate channel №{i + 1}\nID: {dm['id']}\n" \
+                   f"Friend type: {friend_type.get(dm.get('type', 0), 'Unknown')}" \
+                   f"\nLast message id: {dm.get('last_message_id', None)}\n" \
+                   f"Channel created at: {get_account_creation(dm['id'])}\n\nRecipients:\n"
             for recipient in dm['recipients']:
-                user_flags = get_user_flags(recipient['public_flags'])
-                user_id = recipient['id']
-                user_name = recipient['username']
-                discriminator = recipient['discriminator']
+                user_flags = get_user_flags(recipient.get("public_flags", 0))
+                user_id = recipient["id"]
+                user_name = recipient["username"]
+                discriminator = recipient["discriminator"]
                 avatar = (
-                    f"https://cdn.discordapp.com/avatars/{user_id}/{recipient['avatar']}.",
-                    f"{'gif' if str(recipient['avatar']).startswith('a_') else 'png'}"
+                    f"https://cdn.discordapp.com/avatars/{user_id}/{recipient.get('avatar', '')}.",
+                    f"{'gif' if str(recipient.get('avatar', '')).startswith('a_') else 'png'}"
                     if recipient.get("avatar", None)
                     else None
                 )
-                text += f"[ ID ]: {user_id}\n" \
-                        f"[ Name#Tag: {f'{user_name}#{discriminator}'}\n" \
-                        f"[ Avatar URL ]: {avatar}\n" \
-                        f"[ Account Creation ]: {get_account_creation(user_id)}\n" \
-                        f"[ Global Name ]: {recipient.get('global_name', user_name)}\n" \
-                        f"[ Display Name ]: {recipient.get('display_name', user_name)}\n" \
-                        f"[ Bot ]: {recipient.get('bot', False)}\n" \
-                        f"[ Flags ]: {', '.join(user_flags) if user_flags else 'No flags'}\n\n"
+                text += f"ID: {user_id}\n" \
+                        f"Name#Tag: {f'{user_name}#{discriminator}'}\n" \
+                        f"Avatar URL: {avatar}\n" \
+                        f"Account Creation: {get_account_creation(user_id)}\n" \
+                        f"Global Name: {recipient.get('global_name', user_name)}\n" \
+                        f"Display Name: {recipient.get('display_name', user_name)}\n" \
+                        f"Bot: {recipient.get('bot', False)}\n" \
+                        f"Flags: {', '.join(user_flags) if user_flags else 'No flags'}\n\n"
             direct_messages.append(text)
 
     return direct_messages
@@ -361,6 +354,8 @@ async def check_token(token: str, mask_token: bool = True) -> None:
 
     if status == 200:
         locale = None
+        nitro_start, nitro_end = "No nitro", "No nitro"
+
         user_creation = get_account_creation(info["id"])
         guilds_text, payments_text, \
             gifts_text, promotions_text, connections_text, \
@@ -382,16 +377,9 @@ async def check_token(token: str, mask_token: bool = True) -> None:
 
         if premium_type != "No nitro":
             nitro_start, nitro_end = await get_nitro_info(headers=headers)
-        else:
-            nitro_start, nitro_end = "No nitro", "No nitro"
 
         classic_credits, nitro_boost_credits = await check_nitro_credit(headers=headers)
-        nitro_credits = f"[ Nitro classic/boost credits ]: {classic_credits}/{nitro_boost_credits}"
-
-        gifts = await get_gifts(headers=headers)
-        gifts_text += "".join(
-            [f'{gift}\n' for gift in gifts]
-        ) if len(gifts) >= 1 else 'No gifts in account'
+        nitro_credits = f"Nitro classic/boost credits: {classic_credits}/{nitro_boost_credits}"
 
         # "You need to verify your account in order to perform this action." check
         if (payments := await check_payments(headers=headers)) != 403:
@@ -402,8 +390,13 @@ async def check_token(token: str, mask_token: bool = True) -> None:
             console.print(f"token {masked_token} is phone locked!")
             return
 
+        gifts = await get_gifts(headers=headers)
+        gifts_text += "".join(
+            [f'{gift}\n' for gift in gifts]
+        ) if len(gifts) >= 1 else 'No gifts in account'
+
         count, relationships = await get_relationships(headers=headers)
-        rel_text += f"[ Total relationships ]: {count}"
+        rel_text += f"Total relationships: {count}"
         rel_text += ''.join([text for text in relationships])
 
         guilds = await get_guilds(headers=headers)
@@ -418,36 +411,36 @@ async def check_token(token: str, mask_token: bool = True) -> None:
             for conn_type, (name, sh_prof, verified, revoked) in connections.items()
         ]) if len(connections) >= 1 else "No connections in account"
 
-        if locale is not None:
-            promotions = await get_promotions(headers=headers, locale=locale)
-            promotions_text += ''.join([
-                f"Promo: {name} | Start time: {s_time} | End time: {end_time} |"
-                f" Link to activate: {link} | Code: {code}\n"
-                for name, (s_time, end_time, link, code) in promotions.items()
-            ]) if len(promotions) >= 1 else "No promotions in account"
+        promotions = await get_promotions(headers=headers, locale=locale or "en")
+        promotions_text += ''.join([
+            f"Promo: {name} | Start time: {s_time} | End time: {end_time} |"
+            f" Link to activate: {link} | Code: {code}\n"
+            for name, (s_time, end_time, link, code) in promotions.items()
+        ]) if len(promotions) >= 1 else "No promotions in account"
 
         boosts = await check_boosts(headers=headers)
         boosts_text += ''.join([
             f"Boost status: {boost_status} | Guild id: {guild_id} | Boost id: {boost_id} "
             f"| ended: {ended} | canceled: {canceled} | Cooldown ends: {cooldown_end}\n"
-            for boost_id, (guild_id, ended, boost_status, canceled, cooldown_end, subscription_id) in boosts.items()
+            for boost_id, (guild_id, ended, boost_status, canceled, cooldown_end, subscription_id) in
+            boosts.items()
         ]) if len(boosts) >= 1 else "No boosts in account"
 
         direct_messages = await get_dms(headers=headers)
-        private_channels_text += f"[ Total private channels ]: {len(direct_messages)}\n"
+        private_channels_text += f"Total private channels: {len(direct_messages)}\n"
         private_channels_text += ''.join([text for text in direct_messages])
 
-        username = info["username"]
-        full_name = f"{info['username']}#{info['discriminator']}"
-        avatar = f"https://cdn.discordapp.com/avatars/{info['id']}/{info['avatar']}." \
-                 f"{'gif' if str(info['avatar']).startswith('a_') else 'png'}" if info["avatar"] else None
-        banner = f"https://cdn.discordapp.com/banners/{info['id']}/{info['banner']}." \
-                 f"{'gif' if str(info['banner']).startswith('a_') else 'png'}" if info["banner"] else None
-        email = info["email"]
-        phone = info["phone"]
-        verified = info["verified"]
-        mfa = info["mfa_enabled"]
-        bio = info["bio"] if info["bio"] else None
+        username = info.get("username")
+        full_name = f"{info.get('username')}#{info.get('discriminator')}"
+        avatar = f"https://cdn.discordapp.com/avatars/{info.get('id')}/{info.get('avatar')}." \
+                 f"{'gif' if str(info.get('avatar', '')).startswith('a_') else 'png'}" if info.get("avatar") else None
+        banner = f"https://cdn.discordapp.com/banners/{info.get('id')}/{info.get('banner')}." \
+                 f"{'gif' if str(info.get('banner', '')).startswith('a_') else 'png'}" if info.get("banner") else None
+        email = info.get("email")
+        phone = info.get("phone")
+        verified = info.get("verified", False)
+        mfa = info.get("mfa_enabled", False)
+        bio = info.get("bio")
         user_id = info["id"]
 
         full_text = f"""
@@ -458,7 +451,7 @@ ID: {user_id}
 name#tag: {username}
 Full name: {full_name}
 Bio: {bio}
-Account locale: {locale if locale is not None else 'cannot fetch account locale'}
+Account locale: {locale if locale else 'cannot fetch account locale'}
 Avatar URL: {avatar}
 Banner URL: {banner}
 E-mail: {email}
@@ -508,7 +501,7 @@ Nitro ends: {nitro_end}
 Token: {token}
 ID: {user_id}
 name#tag: {username}
-Account locale: {locale if locale is not None else 'cannot fetch account locale'}
+Account locale: {locale if locale else 'cannot fetch account locale'}
 Created at: {user_creation}
 Public Flags: {', '.join(flags_all) if flags_all else 'No flags'}
 
@@ -522,6 +515,7 @@ Phone number:   {phone}
 Nitro: {premium_type}
 Nitro started: {nitro_start}
 Nitro ends: {nitro_end}
+Nitro classic/boost credits: {classic_credits}/{nitro_boost_credits}
 
 Full information about this token saved in h_tool/saved/token_info.txt
                 """
