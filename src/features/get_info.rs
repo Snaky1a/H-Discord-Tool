@@ -4,7 +4,7 @@ use chrono::{
 };
 use reqwest::{Client, Response};
 use serde::Deserialize;
-use std::{collections::HashMap, ops::Add, io::stdin};
+use std::{collections::HashMap, io::stdin, ops::Add};
 use tokio::task;
 
 #[derive(Debug, Deserialize)]
@@ -63,9 +63,9 @@ fn check_flags(public_flags: i32) -> String {
     flags_list.join(", ")
 }
 
-async fn api_get(client: Client, url: String, token: &str) -> Response {
+async fn api_get(client: Client, url: &str, token: &str) -> Response {
     let resp = client
-        .get(url)
+        .get(format!("https://discord.com/api/v10/{}", url))
         .header("authorization", token)
         .send()
         .await
@@ -85,8 +85,27 @@ fn get_account_creation_and_convert(snowflake_id: &u64) -> DelayedFormat<Strftim
     user_creation
 }
 
+async fn check_nitro_credit(token: &str) -> HashMap<&str, usize> {
+    let client: Client = Client::new();
+    let mut dict_credits: HashMap<&str, usize> = HashMap::new();
+
+    let text = api_get(
+        client,
+        "users/@me/applications/521842831262875670/entitlements?exclude_consumed=true",
+        token,
+    )
+    .await
+    .text()
+    .await;
+    let text = text.unwrap();
+    dict_credits.insert("Nitro Classic", text.matches("Nitro Classic").count());
+    dict_credits.insert("Nitro Monthly", text.matches("Nitro Monthly").count());
+    dict_credits.insert("Nitro Boost", text.matches("Nitro Boost").count());
+
+    dict_credits
+}
+
 pub async fn check_token(token: &str) {
-    let base_url: &str = "https://discord.com/api/v10";
     let token = token.trim();
     // let mut friend_type: HashMap<i32, &str> = HashMap::from([
     //     (1, "Friend"),
@@ -96,9 +115,8 @@ pub async fn check_token(token: &str) {
     // ]);
     // let friend = friend_type.get(&5).unwrap_or(&"Unknown");
 
-    let client: Client = Client::new();
-
-    let resp = self::api_get(client, format!("{}/users/@me", base_url), token).await;
+    let resp = self::api_get(Client::new(), "/users/@me", token).await;
+    let nitro_credits = self::check_nitro_credit(token).await;
 
     if resp.status() == 200 {
         let text = resp.json::<Me>().await.unwrap();
@@ -172,6 +190,19 @@ Linked users: {linked_users}
                 linked_users = text.linked_users.join(", "),
             )
         );
+        println!(
+            "{}",
+            format!(
+                "
+=== Nitro Credits ===
+Nitro Classic credits: {classic}
+Nitro Monthly credits: {monthly}
+Nitro Boost credits: {boost}\n",
+                classic = nitro_credits.get("Nitro Classic").unwrap(),
+                monthly = nitro_credits.get("Nitro Monthly").unwrap(),
+                boost = nitro_credits.get("Nitro Boost").unwrap(),
+            )
+        )
     } else {
         println!("token {} is not valid", token);
     }
@@ -179,13 +210,11 @@ Linked users: {linked_users}
     println!("Please any key to continue...");
     let mut temp = String::new();
     match stdin().read_line(&mut temp) {
-        Ok(_) => {
-            task::spawn_blocking(|| {
-                crate::main();
-            })
-            .await
-            .expect("Task panicked")
-        }
+        Ok(_) => task::spawn_blocking(|| {
+            crate::main();
+        })
+        .await
+        .expect("Task panicked"),
         Err(_) => {}
     }
 }
