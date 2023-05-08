@@ -4,11 +4,16 @@ use features::get_info::check_token;
 use features::utils::clear_console;
 use std::io;
 use std::process::exit;
+use tokio::{
+    task,
+    time::{sleep, Duration},
+};
 
 #[tokio::main]
 async fn main() -> () {
     clear_console();
-    let mut option: String = String::new();
+    let mut temp: String = String::new();
+    let mut option: i32 = 0;
     println!(
         "Welcome to H-Discord-Tool!
 ╭─ Please, select an option ─╮
@@ -25,8 +30,32 @@ async fn main() -> () {
 ╰────────────────────────────╯"
     );
     println!("Option [1/2/3/4/5/6/7/8/9/10]:");
-    io::stdin().read_line(&mut option).expect("Err");
-    let option: u32 = option.trim().parse().expect("Cannot fetch number");
+    match io::stdin().read_line(&mut temp) {
+        Ok(_) => match temp.trim().parse::<i32>() {
+            Ok(_) => {
+                option = temp.trim().parse::<i32>().unwrap();
+            }
+            Err(_) => {
+                println!("This is not a number!");
+                sleep(Duration::from_secs(3)).await;
+                task::spawn_blocking(|| {
+                    crate::main();
+                })
+                .await
+                .expect("Task panicked");
+            }
+        },
+        Err(_) => {
+            println!("Try again");
+            sleep(Duration::from_secs(3)).await;
+            task::spawn_blocking(|| {
+                crate::main();
+            })
+            .await
+            .expect("Task panicked");
+        }
+    }
+
     if option == 1 {
         let mut token: String = String::new();
         println!("Input token:");
@@ -35,6 +64,12 @@ async fn main() -> () {
     } else if option == 10 {
         exit(0)
     } else {
-        println!("This is not a number!")
+        println!("This number isn't registered. Please, try again");
+        sleep(Duration::from_secs(3)).await;
+        task::spawn_blocking(|| {
+            crate::main();
+        })
+        .await
+        .expect("Task panicked");
     }
 }

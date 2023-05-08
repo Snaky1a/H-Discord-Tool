@@ -33,6 +33,12 @@ struct Me {
     phone: Option<String>,
 }
 
+// #[derive(Debug, Deserialize)]
+// struct Payments {
+//     card_type: i16,
+//     brand: String,
+// }
+
 fn check_flags(public_flags: i32) -> String {
     let flags: HashMap<i32, &str> = HashMap::from([
         (1 << 0, "Staff Team"),
@@ -103,6 +109,30 @@ async fn check_nitro_credit(token: &str) -> HashMap<&str, usize> {
     dict_credits.insert("Nitro Boost", text.matches("Nitro Boost").count());
 
     dict_credits
+}
+
+async fn get_guilds(token: &str) -> HashMap<String, Vec<String>> {
+    let client: Client = Client::new();
+
+    let mut guilds: HashMap<String, Vec<String>> = HashMap::new();
+
+    let results = api_get(client, "users/@me/guilds?with_counts=true", token)
+        .await
+        .json::<serde_json::Value>()
+        .await;
+
+    for result in results.unwrap().as_array().unwrap() {
+        let guild_id = result.get("id").unwrap();
+        let guild_name = result.get("name").unwrap();
+        let is_owner = result.get("owner").unwrap();
+
+        guilds.insert(
+            guild_id.to_string(),
+            vec![guild_name.to_string(), is_owner.to_string()],
+        );
+    }
+
+    guilds
 }
 
 pub async fn check_token(token: &str) {
@@ -202,7 +232,21 @@ Nitro Boost credits: {boost}\n",
                 monthly = nitro_credits.get("Nitro Monthly").unwrap(),
                 boost = nitro_credits.get("Nitro Boost").unwrap(),
             )
-        )
+        );
+
+        println!("=== Guilds ===");
+
+        for guild in get_guilds(&token).await {
+            println!(
+                "{}",
+                format!(
+                    "Guild id: {g_id}\nguild name: {g_name}\nIs owner? {g_is_owner}\n",
+                    g_id = guild.0.replace("\"", ""),
+                    g_name = guild.1.get(0).unwrap().replace("\"", ""),
+                    g_is_owner = guild.1.get(1).unwrap().replace("\"", "")
+                )
+            );
+        }
     } else {
         println!("token {} is not valid", token);
     }
